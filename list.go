@@ -3,14 +3,16 @@ package doublylinkedlist
 import "fmt"
 
 type List struct {
-	head *Node
-	tail *Node
+	head   *Node
+	tail   *Node
+	length int
 }
 
 type Node struct {
 	Value interface{}
-	Prev  *Node
-	Next  *Node
+	prev  *Node
+	next  *Node
+	list  *List
 }
 
 func NewList() *List {
@@ -18,14 +20,7 @@ func NewList() *List {
 }
 
 func (lst *List) Len() int {
-	counter := 0
-	cursor := lst.head
-	for cursor != nil {
-		counter++
-		cursor = cursor.Next
-	}
-
-	return counter
+	return lst.length
 }
 
 func (lst *List) First() *Node {
@@ -39,8 +34,9 @@ func (lst *List) Last() *Node {
 func (lst *List) PushFront(data interface{}) *Node {
 	var node *Node
 	if lst.head == nil {
-		node = &Node{data, nil, nil}
+		node = &Node{data, nil, nil, lst}
 		lst.tail = node
+		lst.length++
 	} else {
 		node = lst.PushBefore(lst.head, data)
 	}
@@ -52,8 +48,9 @@ func (lst *List) PushFront(data interface{}) *Node {
 func (lst *List) PushBack(data interface{}) *Node {
 	var node *Node
 	if lst.tail == nil {
-		node = &Node{data, nil, nil}
+		node = &Node{data, nil, nil, lst}
 		lst.head = node
+		lst.length++
 	} else {
 		node = lst.PushAfter(lst.tail, data)
 	}
@@ -63,41 +60,49 @@ func (lst *List) PushBack(data interface{}) *Node {
 }
 
 func (lst *List) PushBefore(node *Node, data interface{}) *Node {
-	newNode := &Node{data, node.Prev, node}
-	if node.Prev != nil {
-		node.Prev.Next = newNode
+	newNode := &Node{data, node.prev, node, lst}
+	if node.prev != nil {
+		node.prev.next = newNode
 	} else {
 		lst.head = newNode
 	}
-	node.Prev = newNode
+	node.prev = newNode
+	lst.length++
 
 	return newNode
 }
 
 func (lst *List) PushAfter(node *Node, data interface{}) *Node {
-	newNode := &Node{data, node, node.Next}
-	if node.Next != nil {
-		node.Next.Prev = newNode
+	newNode := &Node{data, node, node.next, lst}
+	if node.next != nil {
+		node.next.prev = newNode
 	} else {
 		lst.tail = newNode
 	}
-	node.Next = newNode
+	node.next = newNode
+	lst.length++
 
 	return newNode
 }
 
 func (lst *List) Remove(node *Node) {
-	if node.Prev != nil {
-		node.Prev.Next = node.Next
-	} else {
-		lst.head = node.Next
+	if node.list != lst {
+		return
 	}
 
-	if node.Next != nil {
-		node.Next.Prev = node.Prev
+	if node.prev != nil {
+		node.prev.next = node.next
 	} else {
-		lst.tail = node.Prev
+		lst.head = node.next
 	}
+
+	if node.next != nil {
+		node.next.prev = node.prev
+	} else {
+		lst.tail = node.prev
+	}
+
+	lst.length--
 }
 
 func (lst *List) String() string {
@@ -105,9 +110,17 @@ func (lst *List) String() string {
 	cursor := lst.head
 	for cursor != nil {
 		result += fmt.Sprintf("[%v] -> ", cursor.Value)
-		cursor = cursor.Next
+		cursor = cursor.next
 	}
 	result += fmt.Sprintf("[T]")
 
 	return result
+}
+
+func (node *Node) Prev() *Node {
+	return node.prev
+}
+
+func (node *Node) Next() *Node {
+	return node.next
 }
